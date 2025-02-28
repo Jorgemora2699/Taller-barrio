@@ -1,32 +1,115 @@
-<html lang="en">
+<html lang="es">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Análisis Espacial</title>
-    <!-- Incluir leaflet -->
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
-    integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
-    crossorigin=""/>
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
-    integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
-    crossorigin=""></script>
-    <link rel="stylesheet" href="estilos.css">
-    <!-- Incluir geoman -->
-    <link
-    rel="stylesheet"
-    href="https://unpkg.com/@geoman-io/leaflet-geoman-free@latest/dist/leaflet-geoman.css"
-  />
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Análisis Espacial - Árboles y Distancias</title>
+  <!-- Incluir Leaflet -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" 
+    integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" 
+    integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+  <!-- Incluir geoman -->
+  <link rel="stylesheet" href="https://unpkg.com/@geoman-io/leaflet-geoman-free@latest/dist/leaflet-geoman.css"/>
   <script src="https://unpkg.com/@geoman-io/leaflet-geoman-free@latest/dist/leaflet-geoman.js"></script>
+  <!-- Incluir turf -->
   <script src="https://cdn.jsdelivr.net/npm/@turf/turf@7/turf.min.js"></script>
+  <link rel="stylesheet" href="estilos.css">
 </head>
 <body>
-    <div id="map"></div>
-    <button class="boton" id="centroid"> Centroides</button>    
-    <button class="boton" id="centroid_distance"> Distancia Centroides</button>    
-    <button class="boton" id="areas"> Áreas</button>    
-    <button class="boton" id="intersection"> Detectar Intersecciones</button>    
+  <div id="map" style="height: 80vh;"></div>
+  <div class="buttons">
+    <button id="btn-arboles">Árboles</button>
+    <button id="btn-distancia">Distancia entre árboles</button>
+    <button id="btn-homicidios">Homicidios</button>
+  </div>
+  
+  <script>
+    // Inicializar el mapa centrado en Barrio Techo Kennedy, Bogotá
+    var map = L.map('map').setView([4.626622571011273, -74.14742196308742], 16);
+    
+    L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      maxZoom: 19,
+      attribution: '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+    }).addTo(map);
+    
+    map.pm.addControls({
+      position: 'topleft',
+      drawCircle: false
+    });
+    
+    // Variables globales para almacenar la capa y los features de árboles
+    var treesLayer;
+    var treesFeatures = [];
+    
+    // Función para cargar y mostrar los árboles desde un archivo GeoJSON
+    function cargarArboles() {
+      fetch('arboles.geojson')
+        .then(response => response.json())
+        .then(data => {
+          // Remover layer anterior si ya existe
+          if (treesLayer) {
+            map.removeLayer(treesLayer);
+          }
+          treesLayer = L.geoJSON(data, {
+            pointToLayer: function (feature, latlng) {
+              return L.circleMarker(latlng, {
+                radius: 5,
+                fillColor: "green",
+                color: "darkgreen",
+                weight: 1,
+                opacity: 1,
+                fillOpacity: 0.8
+              }).bindPopup(`Árbol: ${feature.properties.nombre || 'Sin nombre'}`);
+            }
+          }).addTo(map);
+          // Guardar los features para el cálculo de distancias
+          treesFeatures = data.features;
+          console.log("Árboles cargados:", treesFeatures.length);
+        })
+        .catch(error => console.error('Error cargando los árboles:', error));
+    }
+    
+    // Función para calcular la distancia entre cada par de árboles
+    function calcularDistanciaEntreArboles() {
+      if (!treesFeatures || treesFeatures.length < 2) {
+        console.warn("Se requieren al menos dos árboles para calcular distancias.");
+        return;
+      }
+      
+      // Calcular y mostrar la distancia entre cada par de árboles
+      for (let i = 0; i < treesFeatures.length; i++) {
+        for (let j = i + 1; j < treesFeatures.length; j++) {
+          const distancia = turf.distance(treesFeatures[i], treesFeatures[j], { units: 'meters' });
+          console.log(`Distancia entre árbol ${i} y árbol ${j}: ${distancia.toFixed(2)} metros`);
+          // Opcional: dibujar una línea entre los árboles (si la cantidad de árboles es manejable)
+          /*
+          const linea = {
+            type: "Feature",
+            geometry: {
+              type: "LineString",
+              coordinates: [
+                treesFeatures[i].geometry.coordinates,
+                treesFeatures[j].geometry.coordinates
+              ]
+            }
+          };
+          L.geoJSON(linea, { style: { color: "blue" } }).addTo(map);
+          */
+        }
+      }
+    }
+    
+    // Función placeholder para mostrar homicidios (puedes adaptarla para cargar datos reales)
+    function mostrarHomicidios() {
+      L.marker([4.650, -74.095]).addTo(map)
+        .bindPopup("Homicidio registrado en Techo Kennedy");
+      console.log("Mostrando homicidios");
+    }
+    
+    // Asignar funciones a los botones
+    document.getElementById('btn-arboles').addEventListener('click', cargarArboles);
+    document.getElementById('btn-distancia').addEventListener('click', calcularDistanciaEntreArboles);
+    document.getElementById('btn-homicidios').addEventListener('click', mostrarHomicidios);
+  </script>
 </body>
-<script src="inicializar_mapa.js"></script>
-<script src="manejadores.js"></script>
-<script src="analistas.js"></script>
 </html>

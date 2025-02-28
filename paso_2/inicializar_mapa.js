@@ -1,4 +1,4 @@
-var map = L.map('map').setView([51.505, -0.09], 13);
+var map = L.map('map').setView([4.626697428139361, -74.14698208081987],16);
 
 L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
     maxZoom: 19,
@@ -6,29 +6,26 @@ L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
 }).addTo(map);
 
 map.pm.addControls({
-    position:'topleft',
+    position: 'topleft',
     drawCircle: false
-})
+});
 
-let drawnLayers =[];
-let intersectionsLayers=[]
+let drawnLayers = [];
+let intersectionsLayers = [];
 
 // Manejadores de eventos
 
-map.on("pm:create", function (e){
+map.on("pm:create", function (e) {
     let myLayer = e.layer;
-    //Si es un polígono entonces agregarlo al arreglo drawnLayers
-    if(myLayer instanceof L.Polygon){
-        //Agregar el objeto capa al arreglo
+    // Si es un polígono entonces agregarlo al arreglo drawnLayers
+    if (myLayer instanceof L.Polygon) {
+        // Agregar el objeto capa al arreglo
         drawnLayers.push(myLayer);
-        console.info("Has creado un polígono")
+        console.info("Has creado un polígono");
     }
-})
-
+});
 
 map.on("pm:remove", function (e) {
-    drawnLayers = drawnLayers.filter((layer)=> layer != e.layer);
+    drawnLayers = drawnLayers.filter((layer) => layer != e.layer);
     console.log("Has borrado un polígono");
-}
-)
-
+});

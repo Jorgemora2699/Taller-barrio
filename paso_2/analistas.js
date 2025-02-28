@@ -1,24 +1,21 @@
 
-function detectCentroids(){
-
-    drawnLayers.forEach(
-        function(layer){
-            try{
-                let centroid = turf.centroid(layer.toGeoJSON());
-                L.geoJSON(centroid, {
-                    style: {
-                        color:"red",
-                        fillColor: "green"
-                    }
-                }).addTo(map);
-                console.log(centroid);
-            }catch(error){
-                console.warn("Error al detectar centroides", error);
-
-            }
-        } 
-    )
-}
+fetch('arboles.geojson')
+  .then(response => response.json())
+  .then(data => {
+    L.geoJSON(data, {
+      pointToLayer: function (feature, latlng) {
+        return L.circleMarker(latlng, {
+          radius: 5,
+          fillColor: "green",
+          color: "darkgreen",
+          weight: 1,
+          opacity: 1,
+          fillOpacity: 0.8
+        }).bindPopup(`Árbol: ${feature.properties.nombre}`); // Ajusta según atributos
+      }
+    }).addTo(map);
+  })
+  .catch(error => console.error('Error cargando los árboles:', error));
 
 
 function calculateAreas(){
